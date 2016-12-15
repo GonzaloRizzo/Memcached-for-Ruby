@@ -1,5 +1,5 @@
 require 'socket'
-require_relative 'cache'
+require_relative 'lib/cache'
 Thread::abort_on_exception = true
 #todo: Error on max size reached
 SERVER = TCPServer.open(11211) #TODO: Change port with an option
