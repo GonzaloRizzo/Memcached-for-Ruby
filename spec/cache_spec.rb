@@ -1,57 +1,159 @@
 require 'cache'
 
 describe Cache do
-  before :each do
-    @cache=Cache.new(64) # 64 bytes cache
-  end
 
-  it { is_expected.to respond_to :get }
-  it { is_expected.to respond_to :set }
-  it { is_expected.to respond_to :key? }
-  it { is_expected.to respond_to :[]= }
-  it { is_expected.to respond_to :[] }
-  it { is_expected.to respond_to :delete }
-  it { is_expected.to respond_to :touch }
-  it { is_expected.not_to respond_to :evict }
+	let! (:cache) { Cache.new(64) } # 64 bytes cache
 
+	it { is_expected.to respond_to :get }
+	it { is_expected.to respond_to :set }
+	it { is_expected.to respond_to :key? }
+	it { is_expected.to respond_to :[]= }
+	it { is_expected.to respond_to :[] }
+	it { is_expected.to respond_to :delete }
+	it { is_expected.to respond_to :touch }
+	it { is_expected.not_to respond_to :evict }
 
-  describe "#new" do
-    it "returns an instance of Cache" do
-      expect(@cache).to be_an_instance_of Cache
-    end
-  end
+	def get_rand_string
+		[*(:a..:z)].shuffle[0,8].join
+	end
 
+	def get_rand_char
+		(65+rand(26)).chr
+	end
 
+	let! (:key) { get_rand_char }
+	let! (:val) { get_rand_string }
+	let! (:flags) { get_rand_string }
+	let (:exptime) {Time.now.to_i+1}
 
-  describe "#get" do
-
-    let! (:rand_key) { (65+rand(26)).chr }
-
-    context "with key in cache" do
-      let! (:rand_val) { [*(:a..:z)].shuffle[0,8].join }
-
-      before  do
-        @cache.set(rand_key, rand_val)
-      end
-
-      let! (:saved_data) { @cache.get(rand_key) }
-
-      it "returns the saved value" do
-        expect(saved_data[:data]).to eq rand_val
-      end
+	describe "#new" do
+		it "returns an instance of Cache" do
+			expect(cache).to be_an_instance_of Cache
+		end
+	end
 
 
-    end
+	describe "#set" do
 
-    context "without key in cache" do
+		it "sets value" do
+			cache.set(key, val,nil,nil,flags)
+			expect(cache.get(key)[:data]).to eq val
+		end
 
-      it "returns nil" do
-        val = @cache.get(rand_key)
-          expect(val).to be_nil
-      end
+		it "changes previous value" do
+			cache.set(key, val,nil,nil,flags)
 
-    end
+			rand_value=get_rand_string
 
-  end
+			cache.set(key, rand_value,nil,nil,flags)
+			expect(cache.get(key)[:data]).to eq rand_value
+		end
 
+		it "changes exptime" do
+			cache.set(key, val,nil,0,flags)
+
+			rand_value=get_rand_string
+
+			cache.set(key, nil, nil, exptime, flags)
+			expect(cache.get(key)[:exptime]).to eq exptime
+		end
+
+		it "changes flags" do
+			cache.set(key, val,nil,0,flags)
+
+			rand_flags=get_rand_string
+
+			cache.set(key, nil, nil, nil, rand_flags)
+			expect(cache.get(key)[:flags]).to eq rand_flags
+		end
+
+	end
+
+	describe "#get" do
+
+		context "with key in cache" do
+			context "and with exptime" do
+				before  do
+					cache.set(key, val,nil,exptime,flags)
+				end
+
+				let! (:saved_data) { cache.get(key) }
+
+				it "returns the stored value" do
+					expect(saved_data[:data]).to eq val
+				end
+
+				it "returns the stored flags" do
+					expect(saved_data[:flags]).to eq flags
+				end
+
+				it "returns the stored bytes" do
+					expect(saved_data[:bytes]).to eq val.bytes.length
+				end
+
+				it "returns the stored exptime" do
+					expect(saved_data[:exptime]).to eq exptime
+				end
+
+				it "returns valid cas" do
+					cache.set(key, val,nil,exptime,flags)
+					cache.set(key, val,nil,exptime,flags)
+
+					expect(cache.get(key)[:cas]).to be 3
+				end
+
+				it "expires after exptime passed", :slow => true do
+					sleep 1
+					expect(cache.get(key)).to be nil
+				end
+
+			end
+
+			context "and without exptime" do
+
+				before  do
+					cache.set(key, val,nil,nil,flags)
+				end
+
+				let! (:saved_data) { cache.get(key) }
+
+				it "returns the stored value" do
+					expect(saved_data[:data]).to eq val
+				end
+
+				it "returns the stored flags" do
+					expect(saved_data[:flags]).to eq flags
+				end
+
+				it "returns the stored bytes" do
+					expect(saved_data[:bytes]).to eq val.bytes.length
+				end
+
+				it "returns the stored exptime" do
+					expect(saved_data[:exptime]).to eq 0
+				end
+
+				it "returns valid cas" do
+					cache.set(key, val,nil,nil, flags)
+					cache.set(key, val,nil,nil, flags)
+
+					expect(cache.get(key)[:cas]).to be 3
+				end
+
+			end
+
+
+		end
+
+
+		context "without key in cache" do
+
+			it "returns nil" do
+				val = cache.get(key)
+				expect(val).to be_nil
+			end
+
+		end
+
+	end
 end
