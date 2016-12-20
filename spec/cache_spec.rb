@@ -2,7 +2,7 @@ require 'cache'
 
 describe Cache do
 
-	let! (:cache) { Cache.new(64) } # 64 bytes cache
+	let! (:cache) { Cache.new 64 } # 64 bytes cache
 
 	it { is_expected.to respond_to :get }
 	it { is_expected.to respond_to :set }
@@ -36,30 +36,28 @@ describe Cache do
 	describe "#set" do
 
 		it "sets value" do
-			cache.set(key, val,nil,nil,flags)
+			cache.set(key, val,nil,nil,nil)
 			expect(cache.get(key)[:data]).to eq val
 		end
 
 		it "changes previous value" do
-			cache.set(key, val,nil,nil,flags)
+			cache.set(key, val,nil,nil,nil)
 
 			rand_value=get_rand_string
 
-			cache.set(key, rand_value,nil,nil,flags)
+			cache.set(key, rand_value,nil,nil,nil)
 			expect(cache.get(key)[:data]).to eq rand_value
 		end
 
 		it "changes exptime" do
-			cache.set(key, val,nil,0,flags)
+			cache.set(key, val,nil,nil,nil)
 
-			rand_value=get_rand_string
-
-			cache.set(key, nil, nil, exptime, flags)
+			cache.set(key, nil, nil, exptime, nil)
 			expect(cache.get(key)[:exptime]).to eq exptime
 		end
 
 		it "changes flags" do
-			cache.set(key, val,nil,0,flags)
+			cache.set(key, nil,nil,nil,flags)
 
 			rand_flags=get_rand_string
 
@@ -156,4 +154,55 @@ describe Cache do
 		end
 
 	end
+
+	describe "#key?" do
+		context "with key in cache" do
+			before do
+				cache.set(key, val)
+			end
+			it "returns true" do
+				expect(cache.key?(key)).to be true
+			end
+		end
+		context "without key in cache" do
+			it "returns false" do
+				expect(cache.key?(key)).to be false
+			end
+		end
+	end
+
+	describe "#delete" do
+		context "with key in cache" do
+			before do
+				cache.set(key, val,nil,exptime,flags)
+			end
+			it "expires the data" do
+				cache.delete(key)
+				expect(cache.get(key)).to be nil
+			end
+		end
+		context "without key in cache" do
+			it "takes no action" do
+				expect(cache.get(key)).to be nil
+			end
+		end
+	end
+
+	describe "#touch" do
+		context "with key in cache" do
+			before do
+				cache.set(key, val, nil, 0, flags)
+			end
+			it "changes exptime" do
+				cache.touch(key, exptime)
+				expect(cache.get(key)[:exptime]).to eq exptime
+			end
+		end
+		context "without key in cache" do
+			it "takes no action" do
+				expect(cache.get(key)).to be nil
+			end
+		end
+	end
+
 end
