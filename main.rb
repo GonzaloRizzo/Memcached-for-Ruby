@@ -44,7 +44,7 @@ def update_command(client, msg)
     flags=Integer(flags)
     exptime=parseExptime(Integer(exptime))
     bytes=Integer(bytes)
-    cas_unique= opcode == "cas" ? Integer(cas_unique) : nil
+    cas = opcode == "cas" ? Integer(cas_unique) : nil
 
   rescue TypeError, ArgumentError
     client.sendmsg("CLIENT_ERROR bad command line format\r\n") unless noreply
@@ -52,7 +52,7 @@ def update_command(client, msg)
   end
 
 
-  if data = client.read(bytes+2)
+  if (data = client.read(bytes+2))
 
     unless data[bytes..bytes+2] == "\r\n"
       client.sendmsg("CLIENT_ERROR bad data chunk\r\n") unless noreply
@@ -108,7 +108,7 @@ end
 def retrieval_command(client, msg)
   opcode,*keys=msg
   keys.each do |key|
-    if v = CACHE[key]
+    if (v = CACHE[key])
       client.sendmsg("VALUE #{key} #{v[:flags]} #{v[:bytes]}")
       if (opcode == "gets")
         client.sendmsg(" #{v[:cas]}")
@@ -138,13 +138,13 @@ def incr_decr_command(client, msg)
 
 
   if CACHE.key?(key)
-    if step=Integer(step) rescue nil
+    if (step=Integer(step) rescue nil)
 
       step *= -1 if opcode == "decr"
 
       currentval = CACHE[key][:data]
 
-      if currentval = Integer(currentval) rescue nil
+      if (currentval = Integer(currentval) rescue nil)
         CACHE[key] = currentval + step
       else
         client.sendmsg("CLIENT_ERROR cannot increment or decrement non-numeric value\r\n") unless noreply
@@ -160,20 +160,14 @@ def incr_decr_command(client, msg)
 end
 
 def delete_command (client, msg)
-  opcode, key, noreply = msg
+  _opcode, key, noreply = msg
 
-  if noreply == "noreply"
-    noreply = true
-  else
-    noreply = false
-  end
+  noreply = noreply == 'noreply' ? true : false
 
   unless key
     client.sendmsg("ERROR\r\n") unless noreply
     return
   end
-
-
 
   if CACHE.key?(key)
     CACHE.delete(key)
@@ -183,14 +177,15 @@ def delete_command (client, msg)
   end
 end
 
-def touch_command (client, msg)
-  opcode, key, exptime, noreply = msg
+def touch_command(client, msg)
+  _opcode, key, exptime, noreply = msg
 
   if noreply == "noreply"
     noreply = true
   else
     noreply = false
   end
+  noreply = noreply == 'noreply' ? true : false
 
   unless exptime
     client.sendmsg("ERROR\r\n") unless noreply
@@ -210,7 +205,7 @@ end
 loop do
   Thread.start(SERVER.accept) do |client|
     puts "New client from #{client.peeraddr[3]}"
-    while  msg = client.gets
+    while  (msg = client.gets)
       puts "-> #{msg}"
       msg = msg.split
       case msg[0].to_s.to_sym

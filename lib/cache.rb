@@ -1,33 +1,33 @@
-class Cache
-  #TODO: Save only given bytes of val!!
-  #TODO: Verify "key?"
-  def initialize(size=(1024*1024*1024), maxKeySize=(1024*1024))
-    @size=size
-    @maxKeySize = size < maxKeySize ? size : maxKeySize
-    @data={}
-    @casval={}
-    @keysize={}
-    @casaccumulator=0
 
+# Cache class made to handle all inner
+# @author Gonzalo Rizzo
+
+class Cache
+  # TODO: Save only given bytes of val!!
+  # TODO: Verify "key?"
+  def initialize(size = (1024 * 1024 * 1024), maxKeySize = (1024 * 1024))
+    @size = size
+    @max_key_size = size < maxKeySize ? size : maxKeySize
+    @data = {}
+    @cas_val = {}
+    @key_size = {}
+    @cas_accumulator = 0
     @next_evict = nil
 
     @mutex = Mutex.new
   end
 
   def evict
-    if @next_evict && @next_evict <= Time.now.to_i
-      @next_evict = nil
-      @mutex.synchronize do
-        @data.each do |k, v|
-          if v[:exptime] != 0 && v[:exptime] <= Time.now.to_i
-            p "deleted #{k} !!!!! EVICT <<<<<<<<<<<<<<<<<<<<<<<"
-            @data.delete(k)
-            @keysize.delete(k)
-          else
-            @next_evict = v[:exptime] if v[:exptime] != 0 && ( ! @next_evict || v[:exptime] < @next_evict)
-          end
+    return unless @next_evict && @next_evict <= Time.now.to_i
+    @next_evict = nil
+    @mutex.synchronize do
+      @data.each do |k, v|
+        if v[:exptime] != 0 && v[:exptime] <= Time.now.to_i
+          @data.delete(k)
+          @key_size.delete(k)
+        elsif v[:exptime] != 0 && (!@next_evict || v[:exptime] < @next_evict)
+          @next_evict = v[:exptime]
         end
-
       end
     end
   end
@@ -35,65 +35,60 @@ class Cache
   def get(key)
     evict
     @mutex.synchronize do
-
       if @data.key?(key)
-        (@data[key] = @data.delete(key)).merge({cas: @casval[key], bytes: @keysize[key]})
+        (@data[key] = @data.delete(key)).merge(cas: @cas_val[key], bytes: @key_size[key])
       end
-
     end
   end
 
-  def set(key, val=nil, bytes=nil, exptime=nil, flags=nil)
-  #  puts "set ---> #{key} - #{val}"
+  def set(key, val = nil, bytes = nil, exptime = nil, flags = nil)
+    # puts "set ---> #{key} - #{val}"
     evict
     @mutex.synchronize do
       if val
         if bytes
-          @keysize[key]=bytes
+          @key_size[key] = bytes
         else
-          bytes=val.to_s.bytes.length
+          bytes = val.to_s.bytes.length
         end
-        @keysize[key]=bytes
-        raise NoMemoryError, "Val's size(#{bytes}) is bigger than maxKeySize(#{@maxKeySize})" if bytes > @maxKeySize
+        @key_size[key] = bytes
+        raise NoMemoryError, "Val's size(#{bytes}) is bigger than maxKeySize(#{@max_key_size})" if bytes > @max_key_size
       end
 
-      @casval[key] = @casaccumulator+=1
+      @cas_val[key] = @cas_accumulator += 1
 
       unless @data.key?(key)
-        @data[key]={
+        @data[key] = {
           flags: nil,
-          exptime:0
+          exptime: 0
         }
       end
 
       @data[key][:flags] = flags if flags
       if exptime
         @data[key][:exptime] = exptime
-        @next_evict = exptime if exptime != 0 && ( ! @next_evict || exptime < @next_evict)
+        # TODO: Rethink, use Number#between
+        @next_evict = exptime if exptime != 0 && (!@next_evict || exptime < @next_evict)
       end
 
       #  The key is being deleted so as when I set it again it's plased in the
       # first position, making the first position, the most resently used
       @data[key] = @data.delete(key)
 
-      if (val)
-
+      if val
         @data[key][:data] = val.to_s
 
-        usedBytes=0
-        @keysize.each do |k,v|
-          usedBytes+=v
+        used_bytes = 0
+        @key_size.each do |_k, v|
+          used_bytes += v
         end
 
-
-        while usedBytes > @size
-          p "#{usedBytes} > #{@size}  <<<<<<<<<<<<<<<<<----------------"
-          deletedKey = @data.shift[0]
-          usedBytes -= @keysize.delete(deletedKey)
+        while used_bytes > @size
+          deleted_key = @data.shift[0]
+          used_bytes -= @key_size.delete(deleted_key)
         end
 
       end
-
     end
   end
 
@@ -109,19 +104,19 @@ class Cache
   def delete(key)
     set(key, nil, nil, 1, nil)
   end
+
   def touch(key, exptime)
     set(key, nil, nil, exptime, nil)
   end
 
-  def dump(client)
+  def dump(client) # TODO: Delete
     @mutex.synchronize do
-      @data.each do |k,v|
-        client.sendmsg("#{k} -> #{@keysize[k]}\r\n")
+      @data.each do |k, _v|
+        client.sendmsg("#{k} -> #{@key_size[k]}\r\n")
       end
     end
   end
 
-  alias_method :[], :get
+  alias [] get
   private :evict
-
 end
