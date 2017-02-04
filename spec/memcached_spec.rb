@@ -42,7 +42,7 @@ describe Memcached::Server do
   end
 
   describe '#stop' do
-    it 'stops the server', stop: true do
+    it 'stops the server' do
       server.stop
       expect(server.online?).to be false
     end
@@ -93,7 +93,7 @@ describe Memcached::Server do
     end
   end
 
-  describe '@tcp_server', tcp: true do
+  describe '@tcp_server', tcp_server: true do
 
     let!(:client) { TCPSocket.new("localhost", server.port) }
 
@@ -595,7 +595,7 @@ describe Memcached::Server do
 
 
 
-    it 'supports 10 concurrent connections', :ten => true do
+    it 'supports 10 concurrent connections', concurrency_test: true do
       client.close
 
       # Array of running threads
@@ -647,6 +647,7 @@ describe Memcached::Server do
         end
       end
 
+      # waits 5 seconds and then requests all threads to finish
       sleep 5
 
       thrs.each do |t|
