@@ -56,7 +56,7 @@ module Memcached
 
           if new_client.is_a? TCPSocket
             # Registers the new client's thread
-            new_thread = createClientThread(new_client)
+            new_thread = create_client_thread(new_client)
 
             # Registers the client on the Thread
             new_thread[:client] = new_client
@@ -85,18 +85,17 @@ module Memcached
       @listening_thread[:exit?] = true
 
       # WARNING: Workaround!!
-      #   Here I had to put a small margin of 100ms because of connections that
-      # were made very close to the stop of the server.
-      #   When a new connection is made and then this method is inmediately
-      # called, as you can see in the spec 'closes open connections' of '#stop',
-      # from times to times the connection falls in some kind of limbo where
-      # this server didn't accept the connection but the client thinks that it
-      # did. So with this method I wait 100ms for new connections so they can
-      # be properly closed, the problem is that, in theory, when a connection is
-      # made 100ms after this method is called they fall in the same problem
-      # that I described b efore. So this workaround only fixes the spec that
-      # I mentioned before
-      # TODO: Check this
+      # Here I had to put a small margin of 100ms here because of connections
+      #  that were made very close to the stop of the server.
+      # When a new connection is made and then this method is inmediately
+      #  called, as you can see in the spec 'closes open connections' of '#stop',
+      #  from times to times the connection falls in some kind of limbo where
+      #  this server didn't accept the connection but the client thinks that it
+      #  did. So with this method I wait 100ms for new connections so they can
+      #  be properly closed, the problem is that, in theory, when a connection is
+      #  made 100ms after this method is called they fall in the same problem
+      #  that I described before. So this workaround only fixes the spec that
+      #  I mentioned before
       unless (IO.select([@tcp_server], nil, nil, 0.1) rescue nil)
         @tcp_server.close
       end
@@ -134,7 +133,7 @@ module Memcached
 
     # Creates a new thread for a client that will process all commands recived
     #  by this client
-    def createClientThread(socket)
+    def create_client_thread(socket)
       Thread.new(socket) do |client|
         # Tries to store the client's IP and closes the connection if it fails.
         # Was the connection already closed?
@@ -164,13 +163,12 @@ module Memcached
           end
 
         end
-        p "CLOSING"
         client.close
       end
     end
 
     # Parses a memcached's exptime into a unixstamp.
-    def parseExptime(exptime=nil)
+    def parse_exptime(exptime=nil)
       if ! exptime || exptime == 0
         0 # Don't expire
       elsif exptime < 0
@@ -208,7 +206,7 @@ module Memcached
       # Casts input variables
       begin
         flags = Integer(flags)
-        exptime = parseExptime(Integer(exptime))
+        exptime = parse_exptime(Integer(exptime))
         bytes = Integer(bytes)
         cas = opcode == "cas" ? Integer(cas) : nil
       rescue TypeError, ArgumentError
@@ -407,7 +405,7 @@ module Memcached
       end
 
       # Changes the exptime from the given key on the cache
-      @cache.touch(key, parseExptime(Integer(exptime)))
+      @cache.touch(key, parse_exptime(Integer(exptime)))
       client.sendmsg("TOUCHED\r\n") unless noreply
 
     end
