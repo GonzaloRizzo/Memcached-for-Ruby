@@ -595,62 +595,65 @@ describe Memcached::Server do
 
 
 
-    it 'supports 10', :ten => true do
+    it 'supports 10 concurrent connections', :ten => true do
       client.close
+
+      # Array of running threads
       thrs = []
-      1.times do
-        # add to thrs
+
+      # Execute 10 threads
+      10.times do
+        # Add threads to the array
         thrs << Thread.new do
 
-          client2 = TCPSocket.new("localhost", server.port)
+          # Creates a client for this connection
+          client = TCPSocket.new("localhost", server.port)
 
+          until Thread.current[:exit?]
+            # Generates random data
+            length = rand 8..50
+            data = get_random_string(length)
+            key = get_random_string
 
-          length = rand 8..50
-          data = get_random_string(length)
-          key = get_random_string
+            # Sends random data
+            client.sendmsg("set #{key} 0 0 #{length} noreply\r\n")
+            client.sendmsg("#{data}\r\n")
 
+            # Tries to retrive the data
+            client.sendmsg("get #{key}\r\n")
 
+            # Reads the answer and parses the response
+            header_token, key, flag, length  = client.gets("\r\n").split
+            length = Integer(length)
+            flag = Integer(flag)
 
-          # Sends random data
-          client2.sendmsg("set #{key} 0 0 #{length} noreply\r\n")
-          # p "<-> set #{key} 0 0 #{length} noreply\r\n"
-          client2.sendmsg("#{data}\r\n")
+            # Resolves header expectations
+            expect(header_token).to eq "VALUE"
+            expect(key).to eq key
+            expect(flag).to eq 0
+            expect(length).to eq length
+            expect(length).to be_an_instance_of Integer
 
-          # Tries to retrive the data
-          client2.sendmsg("get #{key}\r\n")
+            # Requests data
+            data = client.read length + 2
 
-          # Reads the answer and parses the response
-          header_token, key, flag, length  = client2.gets("\r\n").split
-          length = Integer(length)
-          flag = Integer(flag)
-
-          # Resolves header expectations
-          expect(header_token).to eq "VALUE"
-          expect(key).to eq key
-          expect(flag).to eq 0
-          expect(length).to eq length
-          expect(length).to be_an_instance_of Integer
-
-          # Requests data
-          data = client2.read length + 2
-
-          # Resolves data expectations
-          expect(data[-2,2]).to eq "\r\n"
-          expect(data.chomp!).to eq data
-
-
-          expect( client2.gets("\r\n")).to eq "END\r\n"
-
-
-
-          client2.close
+            # Resolves data expectations
+            expect(data[-2,2]).to eq "\r\n"
+            expect(data.chomp!).to eq data
+            expect( client.gets("\r\n")).to eq "END\r\n"
+          end
+          # Closes the connection
+          client.close
         end
       end
 
+      sleep 5
 
       thrs.each do |t|
+        t[:exit?]=true
         t.join
       end
+
     end
 
     after :each do
