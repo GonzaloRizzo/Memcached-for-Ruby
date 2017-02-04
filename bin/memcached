@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+require 'pathname'
+require 'optparse'
+require 'logger'
+
+# Resolves the actual path"
+bin_file = Pathname.new(__FILE__).realpath
+
+# adds lib folder to libpath
+$:.unshift File.expand_path('../../lib', bin_file)
+
+require "memcached"
+
+options={
+  port: 11211,
+  cache_size:1024*1024,
+  max_value_size:1024*1024
+}
+
+OptionParser.new do |opts|
+
+  # Defines a bytes parser
+  opts.accept(:Bytes) do |input|
+
+    #  Analyzes the input with a regular expresion separating the numeric part
+    # from the unit part. It also takes into account decimal numbers
+    # The case of the input is upcased in order to make the code shorter
+    match = /(\d+(?:.\d+)?)([PTGMK]?)[B]?/.match(input.upcase)
+
+    # The first matched group is parsed as the base ammount of bytes
+    bytes = Float(match[1])
+
+    # The exponent is calculated with the second group
+    exponent = { :P => 5, :T => 4, :G => 3, :M => 2, :K => 1, :"" => 0} [ match[2].to_s.to_sym ]
+
+    # The final byte ammount is calculated and rounded
+    (bytes * 1024**exponent).round
+  end
+
+  opts.separator "Memcached server implemented on ruby"
+  opts.separator ""
+
+  opts.on("--port=PORT", '-p', Numeric, "Sets cache size") do |port|
+    options[:port] = port
+  end
+
+  opts.on("--cache-size=SIZE", '-S', "Sets cache size", :Bytes) do |cache_size|
+    options[:cache_size] = cache_size
+  end
+
+  opts.on("--value-size=SIZE", '-s', "Sets maximium value size", :Bytes) do |max_value_size|
+    options[:max_value_size] = max_value_size
+  end
+
+  opts.on("--verbose", "-v", "Enables verbose mode") do
+    Memcached::LOG.level = Logger::DEBUG
+  end
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+if options[:max_value_size] > options[:cache_size]
+  Memcached::LOG.error "The max value size cannot be bigger than the cache size"
+  return
+end
+
+# Creates a new instance of the memcached server
+
+memcached_server = Memcached::Server.new(options[:port], Memcached::Cache.new(options[:cache_size], options[:max_value_size]))
+
+# Waits for the memcached server to finish
+memcached_server.start.join
