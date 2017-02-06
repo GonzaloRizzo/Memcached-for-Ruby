@@ -13,8 +13,8 @@ require "memcached"
 
 options={
   port: 11211,
-  cache_size:1024*1024,
-  max_value_size:1024*1024
+  cache_size: 1024*1024,
+  max_value_size: 1024*1024
 }
 
 OptionParser.new do |opts|
@@ -67,7 +67,6 @@ if options[:max_value_size] > options[:cache_size]
 end
 
 # Creates a new instance of the memcached server
-
 memcached_server = Memcached::Server.new(options[:port], Memcached::Cache.new(options[:cache_size], options[:max_value_size]))
 
 # Waits for the memcached server to finish

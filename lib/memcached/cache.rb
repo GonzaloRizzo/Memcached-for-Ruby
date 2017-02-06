@@ -1,4 +1,3 @@
-#TODO: take count of the bytes used by hand
 module Memcached
   # Class +Cache+ provides an easy way to store volatile data on a limited
   # ammount of space. Also, it provides a mechanism to delete data after
@@ -42,7 +41,8 @@ module Memcached
     # :bytes::   The size in bytes of the value.
     #
     # :cas::     An Integer that changes when the value has changed used to
-    #            verify if the value has changed since the last time it was fetched.
+    #            verify if the value has changed since the last time it was
+    #            fetched
     #
     # Example:
     #
@@ -81,7 +81,7 @@ module Memcached
     #
     # flags:: A general purpose Integer
     def set(key, data)
-      raise ArgumentError, "Data must be a hash" unless data.is_a? Hash
+      raise ArgumentError, 'Data must be a hash' unless data.is_a? Hash
 
       val = data[:val]
       exptime = data[:exptime]
@@ -118,7 +118,7 @@ module Memcached
 
         if val
           @key_size[key] = val.to_s.bytes.length
-          raise NoMemoryError, "The given value's size(#{@key_size[key] }) is bigger than the maximum allowed(#{@max_key_size})" if @key_size[key]  > @max_key_size
+          raise NoMemoryError,"The given value's size(#{@key_size[key]}) is bigger than the maximum allowed(#{@max_key_size})" if @key_size[key]  > @max_key_size
 
           @data[key][:val] = val.to_s
 
@@ -166,7 +166,10 @@ module Memcached
       @data.keys
     end
 
+    # Returns the size of the cache
     attr_reader :size
+
+    # Returns the maximmum size allowed per key
     attr_reader :max_key_size
 
     # Changes the size of the cache
@@ -228,11 +231,9 @@ module Memcached
       @next_evict = exptime if (!@next_evict || exptime < @next_evict)
     end
 
-
     # Sums up the ammount of used bytes and if larget than @size it deletes keys
     #  until there is room for more keys
     def verify_used_bytes
-
       # Calculates the used bytes
       used_bytes = 0
       @key_size.each do |_k, v|
@@ -247,7 +248,6 @@ module Memcached
         deleted_key = @data.shift[0]
         used_bytes -= @key_size.delete(deleted_key)
       end
-
     end
   end
 end
