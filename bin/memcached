@@ -11,7 +11,7 @@ $:.unshift File.expand_path('../../lib', bin_file)
 
 require "memcached"
 
-options={
+options = {
   port: 11211,
   cache_size: 1024*1024,
   max_value_size: 1024*1024
