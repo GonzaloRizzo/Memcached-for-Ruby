@@ -35,16 +35,18 @@ describe Memcached::Cache do
     it 'returns an instance of Memcached::Cache' do
       expect(cache).to be_an_instance_of Memcached::Cache
     end
-
-    it 'shifts max_key_size to size it max_key_size is greater than size' do
-      cache = Memcached::Cache.new(64, 128)
-      expect(cache.max_key_size).to eq 64
-    end
-
-    it 'copies size to max_key_size if max_key_size isn\'t given' do
+    context 'max_key_size is greater than size' do
+      it 'shifts max_key_size to size' do
         cache = Memcached::Cache.new(64, 128)
-      expect(cache.max_key_size).to eq cache.size
+        expect(cache.max_key_size).to eq 64
+      end
     end
+      context "max_key_size isn't given" do
+        it 'copies size to max_key_size' do
+          cache = Memcached::Cache.new(64, 128)
+          expect(cache.max_key_size).to eq cache.size
+        end
+      end
   end
 
   describe '#set' do
