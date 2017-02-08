@@ -1,7 +1,11 @@
 require 'socket'
 require 'logger'
 require 'memcached/cache'
+require 'memcached/router'
 
+# Loads command handlers from the handlers folder
+# Command handlers file names MUST end with Handler.rb
+Dir[File.dirname(__FILE__) + '/memcached/handlers/*Handler.rb'].each {|file| require file }
 
 # :stopdoc:
 Thread::abort_on_exception = true
@@ -30,8 +34,20 @@ module Memcached
 
       # If cache is not defined create a new one
       @cache = (cache or Cache.new(1024*1024*512))
-    end
 
+      # Creates a new router for the server
+      @router = Memcached::Router.new
+
+      # Registers handlers from Memcached::handlers
+       Memcached::Handlers.constants.each do |handler|
+         handler =  Memcached::Handlers.const_get handler
+         next unless handler < Memcached::Handlers::BaseHandler
+         next if handler.handles.empty?
+
+         @router.register(*handler.handles, &handler.method(:handle))
+       end
+
+    end
     attr_reader :port
     attr_reader :cache
 
