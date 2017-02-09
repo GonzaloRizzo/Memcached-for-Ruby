@@ -3,11 +3,11 @@ require 'logger'
 require 'memcached/cache'
 require 'memcached/router'
 
-require 'memcached/handlers/BaseHandler.rb'
+require 'memcached/handlers/base_handler.rb'
 
 # Loads command handlers from the handlers folder
 # Command handlers file names MUST end with Handler.rb
-Dir[File.dirname(__FILE__) + '/memcached/handlers/*Handler.rb'].each {|file| require file }
+Dir[File.dirname(__FILE__) + '/memcached/handlers/*_handler.rb'].each {|file| require file }
 
 # :stopdoc:
 Thread::abort_on_exception = true
