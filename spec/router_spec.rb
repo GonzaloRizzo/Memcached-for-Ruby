@@ -65,7 +65,8 @@ describe Memcached::Router do
 
   describe "#route" do
     before :each do
-      router.register(:sum, :mul) do |cmd, argv|
+      router.register(:sum, :mul) do |cmd, data|
+        argv = data[:argv] if data
 
         if cmd == "sum"
           print Integer(argv[0]) + Integer(argv[1])
@@ -75,7 +76,8 @@ describe Memcached::Router do
 
       end
 
-      router.register(:print) do |_cmd, argv|
+      router.register(:print) do |_cmd, data|
+        argv = data[:argv] if data
         print argv.join " "
       end
     end
@@ -96,13 +98,13 @@ describe Memcached::Router do
       }.to output("50").to_stdout
     end
 
-    context 'got routed somewhere' do
+    context 'when got routed somewhere' do
       it 'returns true' do
         expect(router.route("print")).to be true
       end
     end
 
-    context 'could not get routed' do
+    context 'when could not get routed' do
       it 'returns false' do
         expect(router.route("printf")).to be false
       end

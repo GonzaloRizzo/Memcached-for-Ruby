@@ -7,12 +7,12 @@ module Memcached
 
       @handles = []
 
-      def handle(_msg, _argv)
+      def handle(_msg, _data)
         nil
       end
 
-      def self.handle(msg, argv=nil) #TODO: Extend
-        self.instance.handle(msg, argv)
+      def self.handle(msg, data=nil) #TODO: Extend
+        self.instance.handle(msg, data)
       end
 
       def self.handles

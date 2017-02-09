@@ -18,19 +18,26 @@ module Memcached
       end
     end
 
-    def route(msg)
+    def route(msg, data=nil)
+
+      # Initialized "data" if it is not valid
+      data = {} unless data.is_a? Hash
 
       # Flag to return if the message was routed
       routed = false
 
-      command, *argv = msg.split()
+      msg = msg.split
+
+      command = msg[0]
+      data[:argv] = msg[1..-1] unless data[:argv]
+
 
       handlers = @handlers[String(command).to_sym]
 
       if handlers
         handlers.each do |handler|
           routed = true
-          handler.call(command, argv)
+          handler.call(command, data)
         end
       end
 
