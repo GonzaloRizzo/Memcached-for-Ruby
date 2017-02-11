@@ -1,3 +1,4 @@
+require 'memcached/handlers/base_handler'
 module Memcached
   module Handlers
 
