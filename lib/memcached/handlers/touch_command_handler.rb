@@ -1,3 +1,4 @@
+require 'memcached/utils'
 module Memcached
   module Handlers
 
@@ -28,24 +29,8 @@ module Memcached
         end
 
         # Changes the exptime from the given key on the cache
-        cache.touch(key, parse_exptime(Integer(exptime)))
+        cache.touch(key, Memcached::Utils.parse_exptime(Integer(exptime)))
         client.sendmsg("TOUCHED\r\n") unless noreply
-      end
-
-
-      private
-
-      # Parses a memcached's exptime into a unixstamp.
-      def parse_exptime(exptime=nil) # TODO: Put in a different file
-        if ! exptime || exptime == 0
-          0 # Don't expire
-        elsif exptime < 0
-          1 # Already expired
-        elsif exptime < 2592000 # 30 days in seconds
-          Time.now.to_i + exptime # Expires in "exptime" seconds
-        else
-          exptime # Expires on the given unixstamp
-        end
       end
     end
   end

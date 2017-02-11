@@ -1,3 +1,4 @@
+require 'memcached/utils'
 module Memcached
   module Handlers
 
@@ -34,7 +35,7 @@ module Memcached
         # Casts input variables
         begin
           flags = Integer(flags)
-          exptime = parse_exptime(Integer(exptime))
+          exptime = Memcached::Utils.parse_exptime(Integer(exptime))
           bytes = Integer(bytes)
           cas = (command == "cas" ? Integer(cas) : nil)
         rescue TypeError, ArgumentError
@@ -104,24 +105,6 @@ module Memcached
         end
 
       end
-
-
-      private
-
-
-      # Parses a memcached's exptime into a unixstamp.
-      def parse_exptime(exptime=nil) # TODO: Put in a different file
-        if ! exptime || exptime == 0
-          0 # Don't expire
-        elsif exptime < 0
-          1 # Already expired
-        elsif exptime < 2592000 # 30 days in seconds
-          Time.now.to_i + exptime # Expires in "exptime" seconds
-        else
-          exptime # Expires on the given unixstamp
-        end
-      end
-
     end
   end
 end

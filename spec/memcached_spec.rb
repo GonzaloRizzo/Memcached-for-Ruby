@@ -1,15 +1,6 @@
 require 'memcached'
 require "json"
 
-def get_random_string(size = 8) # :nodoc: all
-  return unless (size = Integer(size))
-  output = []
-  size.times do
-    output << (rand(33..126)).chr
-  end
-  output.join
-end
-
 describe Memcached::Server do
   # Lowers the log level
   Memcached::LOG.level = Logger::FATAL
@@ -102,8 +93,8 @@ describe Memcached::Server do
       before :each do
         # Generates random data
         @length = rand(5..20)
-        @text = get_random_string(@length)
-        @key = get_random_string(1)
+        @text = Memcached::Utils.random_string(@length)
+        @key = Memcached::Utils.random_string(1)
         @flag = rand(10000000..99999999)
         @exptime = Time.now.to_i + 1
       end
@@ -273,15 +264,15 @@ describe Memcached::Server do
 
         # Generates random data
         @lengths[:a] = rand(5..20)
-        @texts[:a] = get_random_string(@lengths[:a])
+        @texts[:a] = Memcached::Utils.random_string(@lengths[:a])
         @flags[:a] = rand(10000000..99999999)
 
         @lengths[:b] = rand(5..20)
-        @texts[:b] = get_random_string(@lengths[:b])
+        @texts[:b] = Memcached::Utils.random_string(@lengths[:b])
         @flags[:b] = rand(10000000..99999999)
 
         @lengths[:c] = rand(5..20)
-        @texts[:c] = get_random_string(@lengths[:c])
+        @texts[:c] = Memcached::Utils.random_string(@lengths[:c])
         @flags[:c] = rand(10000000..99999999)
 
         # Stores data
@@ -467,7 +458,7 @@ describe Memcached::Server do
         context 'when data is not a number' do
           before :each do
             @length = rand(5..20)
-            @text = get_random_string(@length)
+            @text = Memcached::Utils.random_string(@length)
             client.sendmsg("set a 0 0 #{@length} noreply\r\n")
             client.sendmsg("#{@text}\r\n")
           end
@@ -507,7 +498,7 @@ describe Memcached::Server do
         context 'when data is not a number' do
           before :each do
             @length = rand(5..20)
-            @text = get_random_string(@length)
+            @text = Memcached::Utils.random_string(@length)
             client.sendmsg("set a 0 0 #{@length} noreply\r\n")
             client.sendmsg("#{@text}\r\n")
           end
@@ -536,8 +527,8 @@ describe Memcached::Server do
     describe 'delete commands' do
       before :each do
         @length = rand(5..20)
-        @text = get_random_string(@length)
-        @key = get_random_string(1)
+        @text = Memcached::Utils.random_string(@length)
+        @key = Memcached::Utils.random_string(1)
         client.sendmsg("set a 0 0 #{@length} noreply\r\n")
         client.sendmsg("#{@text}\r\n")
       end
@@ -561,13 +552,14 @@ describe Memcached::Server do
     describe 'touch command' do
       before :each do
         @length = rand(5..20)
-        @text = get_random_string(@length)
-        @key = get_random_string(1)
+        @text = Memcached::Utils.random_string(@length)
+        @key = Memcached::Utils.random_string(1)
         @exptime = Time.now.to_i + 1
 
         client.sendmsg("set #{@key} 0 0 #{@length} noreply\r\n")
         client.sendmsg("#{@text}\r\n")
       end
+
       describe "touch" do
         context 'when data is stored' do
           it 'changes exptime' do
@@ -612,8 +604,8 @@ describe Memcached::Server do
           until Thread.current[:exit?]
             # Generates random data
             length = rand 8..50
-            data = get_random_string(length)
-            key = get_random_string
+            data = Memcached::Utils.random_string(length)
+            key = Memcached::Utils.random_string
 
             # Sends random data
             client.sendmsg("set #{key} 0 0 #{length} noreply\r\n")

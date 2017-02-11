@@ -1,13 +1,6 @@
 require 'memcached/cache'
+require 'memcached/utils'
 
-def get_random_string(size = 8) # :nodoc: all
-  return unless (size = Integer(size))
-  output = []
-  size.times do
-    output << (rand(33..126)).chr
-  end
-  output.join
-end
 
 describe Memcached::Cache do
   # 64 bytes cache with max key size of 32 bytes
@@ -26,9 +19,9 @@ describe Memcached::Cache do
   it { is_expected.not_to respond_to :evict }
 
 
-  let!(:key) { get_random_string(1) }
-  let!(:val) { get_random_string(8) }
-  let!(:flags) { get_random_string(8) }
+  let!(:key) { Memcached::Utils.random_string(1) }
+  let!(:val) { Memcached::Utils.random_string(8) }
+  let!(:flags) { Memcached::Utils.random_string(8) }
   let!(:exptime) { Time.now.to_i + 1 }
 
   describe '#new' do
@@ -58,7 +51,7 @@ describe Memcached::Cache do
     it 'changes previous value' do
       cache.set(key, :val => val)
 
-      rand_value =  get_random_string(8)
+      rand_value =  Memcached::Utils.random_string(8)
       cache.set(key, :val => rand_value)
       expect(cache.get(key)[:val]).to eq rand_value
     end
@@ -73,7 +66,7 @@ describe Memcached::Cache do
     it 'changes flags' do
       cache.set(key, :flags => flags)
 
-      rand_flags = get_random_string(8)
+      rand_flags = Memcached::Utils.random_string(8)
 
       cache.set(key, :flags => rand_flags)
       expect(cache.get(key)[:flags]).to eq rand_flags
@@ -82,17 +75,17 @@ describe Memcached::Cache do
     context 'when the cache is full' do
       before :each do
         (1..8).each do |k|
-          cache[k]=get_random_string
+          cache[k]=Memcached::Utils.random_string
         end
       end
 
       it 'deletes the least used key' do
-        cache[9]=get_random_string
+        cache[9]=Memcached::Utils.random_string
         expect(cache.keys).not_to include(1)
       end
 
       it 'deletes multiple old keys if necessary' do
-        cache[9]=get_random_string(16)
+        cache[9]=Memcached::Utils.random_string(16)
         expect(cache.keys).not_to include(1)
         expect(cache.keys).not_to include(2)
       end
@@ -101,7 +94,7 @@ describe Memcached::Cache do
     context 'when the data is bigger than max_key_size' do
       it 'raises a NoMemoryError exception' do
         expect{
-          cache[:a] = get_random_string(65)
+          cache[:a] = Memcached::Utils.random_string(65)
         }.to raise_error NoMemoryError
       end
     end
@@ -241,7 +234,7 @@ describe Memcached::Cache do
       @keys = [:a, :b, :c, :d, :e, :f, :g, :h]
       keys_shuffled = @keys.shuffle
       keys_shuffled.each do |k|
-        cache[k] = get_random_string
+        cache[k] = Memcached::Utils.random_string
       end
       @first = keys_shuffled[0]
       @last = keys_shuffled[-1]
