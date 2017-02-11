@@ -1,7 +1,7 @@
 require 'memcached/handlers/delete_command_handler'
 require 'memcached/cache'
 require 'socket'
-require 'memcached/random_string'
+require 'memcached/utils'
 
 describe Memcached::Handlers::DeleteCommandHandler do
 
@@ -16,7 +16,7 @@ describe Memcached::Handlers::DeleteCommandHandler do
     let!(:cache) { Memcached::Cache.new(64, 32) }
 
     describe '#handles' do
-      it 'should return an array only with the :delete symbol' do
+      it 'should handle the delete command' do
         expect(described_class.handles).to eq [:delete]
       end
     end
@@ -25,21 +25,27 @@ describe Memcached::Handlers::DeleteCommandHandler do
       before :each do
         @client, @server = UNIXSocket.pair
 
-        @text = random_string(64)
-
-        cache["a"] = random_string
+        cache["a"] = Memcached::Utils.random_string
       end
 
       context 'when data is stored' do
         it 'deletes the data' do
-          client.sendmsg("delete a\r\n")
-          expect(client.gets("\r\n")).to eq "DELETED\r\n"
+          described_class.handle("delete",  {
+            cache: cache,
+            client: @server,
+            argv: ["a"]
+            })
+          expect(@client.gets("\r\n")).to eq "DELETED\r\n"
         end
       end
       context 'when data is not stored' do
         it 'returns "NOT_FOUND' do
-          client.sendmsg("delete z\r\n")
-          expect(client.gets("\r\n")).to eq "NOT_FOUND\r\n"
+          described_class.handle("delete",  {
+            cache: cache,
+            client: @server,
+            argv: ["z"]
+            })
+          expect(@client.gets("\r\n")).to eq "NOT_FOUND\r\n"
         end
       end
 
