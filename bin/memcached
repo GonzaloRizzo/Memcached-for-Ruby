@@ -71,4 +71,8 @@ end
 memcached_server = Memcached::Server.new(options[:port], Memcached::Cache.new(options[:cache_size], options[:max_value_size]))
 
 # Waits for the memcached server to finish
-memcached_server.start.join
+begin
+  memcached_server.start.join
+rescue Interrupt
+  memcached_server.stop
+end
