@@ -161,15 +161,18 @@ module Memcached
         LOG.info "New connection from #{addr}"
         #  rescue nil
         while (msg = client.gets("\r\n")  rescue nil)
+          begin
           LOG.debug "#{addr} --> #{msg.inspect}"
+            next if @router.route(msg, {
+              client:client,
+              cache:@cache
+              })
 
-          next if @router.route(msg, {
-            client:client,
-            cache:@cache
-            })
-
-          client.sendmsg("ERROR\r\n")
-
+            client.sendmsg("ERROR\r\n")
+          rescue Errno::EPIPE, Errno::ECONNRESET
+            LOG.warn "#{addr} connection failied"
+            break
+          end
         end
         client.close
       end
