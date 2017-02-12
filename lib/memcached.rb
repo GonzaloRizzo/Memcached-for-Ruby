@@ -16,7 +16,7 @@ Thread::abort_on_exception = true
 
 module Memcached
   LOG = Logger.new STDOUT # :nodoc:
-  LOG.level = Logger::INFO
+  LOG.level = Logger::FATAL
   LOG.progname = "Memcached"
 
   # Class +Server+ provides a server which implements the memcached's protocol
@@ -45,7 +45,7 @@ module Memcached
          handler =  Memcached::Handlers.const_get handler
          next unless handler < Memcached::Handlers::BaseHandler
          next if handler.handles.empty?
-
+         LOG.debug "Registered #{handler} handler for: #{handler.handles.join(", ")}"
          @router.register(*handler.handles, &handler.method(:handle))
        end
 
@@ -99,6 +99,8 @@ module Memcached
     def stop
       return unless @listening_thread
 
+      LOG.info "Stoping the server"
+
       # Requests the listening thread to stop
       @listening_thread[:exit?] = true
 
@@ -117,6 +119,7 @@ module Memcached
       unless (IO.select([@tcp_server], nil, nil, 0.1) rescue nil)
         @tcp_server.close
       end
+      LOG.debug "Closed the socket"
 
       # Waits for the listening thread to end
       @listening_thread.join
@@ -128,6 +131,7 @@ module Memcached
         thr[:client].close
         thr.join
       end
+      LOG.debug "Closed client connections"
 
     end
 
@@ -175,6 +179,7 @@ module Memcached
           end
         end
         client.close
+        LOG.info "#{addr} dissconected"
       end
     end
 

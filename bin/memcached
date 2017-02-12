@@ -16,6 +16,7 @@ options = {
   cache_size: 1024*1024,
   max_value_size: 1024*1024
 }
+Memcached::LOG.level = Logger::INFO
 
 OptionParser.new do |opts|
 
