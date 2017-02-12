@@ -44,6 +44,10 @@ module Memcached
           return
         end
 
+        if bytes > cache.max_key_size
+          client.sendmsg("SERVER_ERROR object too large for cache\r\n")
+          return
+        end
 
         # Reads input data
         data = client.read bytes + 2
