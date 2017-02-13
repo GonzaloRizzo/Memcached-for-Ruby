@@ -2,10 +2,12 @@ require 'memcached/handlers/base_handler'
 module Memcached
   module Handlers
 
+    # Handles the delete command
     class DeleteCommandHandler < BaseHandler
 
       @handles = [:delete]
 
+      # (see Memcached::Handlers::BaseHandler.handle)
       def handle(_command, data)
 
         cache = data[:cache]

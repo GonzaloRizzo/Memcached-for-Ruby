@@ -1,11 +1,24 @@
-
 module Memcached
+  # {Memcached::Router} class is meant to, as the name suggests, route client's
+  # input data to the corresponding handler.
+  #
+  # Handlers are registered by using the {#register} method.
   class Router
 
     def initialize
       @handlers = {}
     end
 
+    # Registers a method to be routed by the {#route} method.
+    #
+    # @param *commands [String] a comma separated list of commands to handle
+    #
+    # @yieldparam command [String] command to handle
+    # @yieldparam data [Hash] hash containing the +argv+ key with the parameters
+    #             provided by {#route} and other keys provided by the same
+    #             method
+    # @raise [LocalJumpError] if a block was not povided
+    #
     def register(*commands, &handler)
       raise LocalJumpError, "No block given" unless handler
 
@@ -18,7 +31,18 @@ module Memcached
       end
     end
 
-    def route(msg, data=nil)
+    # Routes a message to a registered handler
+    #
+    # @param message [String] message to route. The first word will be sent to
+    #        the handler as the command and the rest of the words will be
+    #        splited in an array and sent in the second parameter of the handler
+    #        as the +argv+ key in a +Hash+
+    # @param data [Hash] hash to append to the second parameter of the handler
+    # @return [Boolean] whether the message was routed or not
+    #
+    # @see Memcached::Router#register
+    #
+    def route(message, data=nil)
 
       # Initialized "data" if it is not valid
       data = {} unless data.is_a? Hash
@@ -26,10 +50,10 @@ module Memcached
       # Flag to return if the message was routed
       routed = false
 
-      msg = msg.split
+      message = message.split
 
-      command = msg[0]
-      data[:argv] = msg[1..-1] unless data[:argv]
+      command = message[0]
+      data[:argv] = message[1..-1] unless data[:argv]
 
 
       handlers = @handlers[String(command).to_sym]
@@ -45,8 +69,10 @@ module Memcached
       routed
     end
 
-    def routeable?(msg)
-      return @handlers.include?(msg.split[0].to_sym)
+    # @param message [String] Message to check if it is routeable or not
+    # @return [Boolean] whether the message is routeble or not
+    def routeable?(message)
+      return @handlers.include?(message.split[0].to_sym)
     end
   end
 end

@@ -3,10 +3,12 @@ require 'memcached/utils'
 module Memcached
   module Handlers
 
+    # Handles the touch command
     class TouchCommandHandler < BaseHandler
 
       @handles = [:touch]
 
+      # (see Memcached::Handlers::BaseHandler.handle)
       def handle(_command, data)
 
         cache = data[:cache]

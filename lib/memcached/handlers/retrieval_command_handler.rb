@@ -2,10 +2,12 @@ require 'memcached/handlers/base_handler'
 module Memcached
   module Handlers
 
+    # Handle get and gets commands
     class RetrievalCommandHandler < BaseHandler
 
       @handles = [:get, :gets]
 
+      # (see Memcached::Handlers::BaseHandler.handle)
       def handle(command, data)
 
         keys = data[:argv]

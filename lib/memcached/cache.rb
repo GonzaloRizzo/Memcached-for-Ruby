@@ -7,12 +7,14 @@ module Memcached
   # next time you try to access it since it may had been deleted in order to
   # make space for new keys
   class Cache
+
     # Creates a new  Memcached::Cache object
     #
-    # size:: Ammount of bytes that the cache should be able to hold
+    # @param size [Numeric] Ammount of bytes that the cache should be able to
+    #        hold
     #
-    # maxKeySize:: Maximum size in bytes of a single key. It has to be
-    #              less than the size of the cache.
+    # @param maxKeySize [Numeric] Maximum size in bytes of a single key. It has
+    #        to be less than the size of the cache.
     def initialize(size = (1024 * 1024), maxKeySize = size)
       @size = size
 
@@ -30,28 +32,32 @@ module Memcached
     end
 
     # Returns all the stored data related to the given +key+ in a Hash
-    # The keys on the returned Hash are:
     #
-    # :flags::   A general purpose Integer stored alongside the value.
+    # @param key [Object] requested key
     #
-    # :exptime:: The unixstamp when the value is expected to be deleted.
+    # @return [Hash] Hash with all stored information related to the given key
+    #         including the following keys:
     #
-    # :val::     The stored value.
+    #         - +:flags+ A general purpose Integer stored alongside the value.
     #
-    # :bytes::   The size in bytes of the value.
+    #         - +:exptime+ The unixstamp when the value is expected to be
+    #           deleted.
     #
-    # :cas::     An Integer that changes when the value has changed used to
-    #            verify if the value has changed since the last time it was
-    #            fetched
+    #         - +:val+ The stored value.
     #
-    # Example:
+    #         - +:bytes+ The size in bytes of the value.
     #
-    #   require 'memcached/cache'
+    #         - +:cas+ An Integer that changes when the value has changed used
+    #           to verify if the value has changed since the last time it was
+    #           fetched
     #
-    #   cache = Memcached::Cache.new
-    #   cache[:foo] = "bar"
-    #   cache.get(:foo)
-    #   # => {:flags=>nil, :exptime=>0, :val=>"bar", :bytes=>3, :cas=>1}
+    # @example obtaining the data of a :foo key
+    #  require 'memcached/cache'
+    #
+    #  cache = Memcached::Cache.new
+    #  cache[:foo] = "bar"
+    #  cache.get(:foo)
+    #  # => {:flags=>nil, :exptime=>0, :val=>"bar", :bytes=>3, :cas=>1}
     def get(key)
       evict
       @mutex.synchronize do
@@ -72,14 +78,14 @@ module Memcached
       end
     end
 
-    # Stores information about the +key+, this information is given by the Hash,
-    # +data+, wich can contain the followin keys:
+    # Stores information about a +key+.
     #
-    # exptime:: A unixstamp that represents when the value will expire
-    #
-    # val:: The value to store
-    #
-    # flags:: A general purpose Integer
+    # @param key [Object] key where the data should be loaded
+    # @param data [Hash] the data to store
+    # @option data [Object] :val Value to store
+    # @option data [Numeric] :exptime Timestamp when the value will expire
+    # @option data [Numeric] :flags General purpose Integer to store linked with
+    #         the key
     def set(key, data)
       raise ArgumentError, 'Data must be a hash' unless data.is_a? Hash
 
@@ -128,51 +134,49 @@ module Memcached
       end
     end
 
-    # Returns true if the +key+ is stored in the cache
+    # @param key [Object] key to check if is stored
+    # @return [Boolean] whether the key is stored or not
     def key?(key)
       evict
       @data.key?(key)
     end
 
-    # Returns the stored value of the +key+
-    #
-    # Sugarcode for:
-    #  cache.get(key)[:val]
+    # @param key [Object] key where the value is stored
+    # @return [String] the value of the stored key
     def [](key)
       get(key)[:val] if key?(key)
     end
 
     # Stores a value inside the +key+
-    #
-    # Sugarcode for:
-    #  cache.set(key, :val => value)
+    # @param key [Object] key where where the value should be stored
+    # @param value [Object] value to store in the key
     def []=(key, value)
       set(key, :val => value)
     end
 
-    # Deletes the given +key+ from the cache
+    # Deletes a key from the cache
+    # @param key [Object] key to delete
     def delete(key)
       @data.delete(key)
       @key_size.delete(key)
     end
 
-    # Changes the +exptime+ of a +key+
+    # Changes the exptime of a key
+    # @param key [Object] the key which exptime should be changed
+    # @param exptime [Object] new exptime
     def touch(key, exptime)
       set(key, :exptime => exptime)
     end
 
-    # Lists the keys inside the cache
+    # @return [Array] stored keys
     def keys
       @data.keys
     end
 
-    # Returns the size of the cache
+
+    # @return [Numeric] size of the cache
     attr_reader :size
 
-    # Returns the maximmum size allowed per key
-    attr_reader :max_key_size
-
-    # Changes the size of the cache
     def size=(size)
       @mutex.synchronize do
 
@@ -188,7 +192,10 @@ module Memcached
       end
     end
 
-    # Changes the maximum ammount of bytes per key
+
+    # @return [Numeric] maximmum size allowed per key
+    attr_reader :max_key_size
+
     def max_key_size=(max_key_size)
       @max_key_size = @size < @max_key_size ? @size : max_key_size
     end

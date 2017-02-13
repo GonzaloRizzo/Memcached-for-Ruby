@@ -9,25 +9,27 @@ require 'memcached/handlers/base_handler.rb'
 # Command handlers file names MUST end with Handler.rb
 Dir[File.dirname(__FILE__) + '/memcached/handlers/*_handler.rb'].each {|file| require file }
 
-# :stopdoc:
 Thread::abort_on_exception = true
-# :startdoc:
 
-
+# @author Gonzalo Rizzo
 module Memcached
-  LOG = Logger.new STDOUT # :nodoc:
+
+  # Memcached's logger
+  LOG = Logger.new STDOUT
   LOG.level = Logger::FATAL
   LOG.progname = "Memcached"
 
-  # Class +Server+ provides a server which implements the memcached's protocol
+  # Class +Server+ provides a {http://ruby-doc.org/stdlib-2.4.0/libdoc/socket/rdoc/TCPSocket.html TCPSocket}
+  # which implements the memcached's protocol
   class Server
     # Creates a new Memcached::Server object on a given port
     #
-    # port::  Port where the server should listen for connections. If 0 is given
-    #         a random port will be provided (default: 11211)
+    # @param port [Numeric] port where the server should listen for connections.
+    #        If 0 is given a random port will be provided
     #
-    # cache:: An instance of Memcached::Cache to attach into the server.
-    #         defaults to a 512MiB cache
+    # @param cache [Memcached::Cache] a cache object to attach into the server.
+    #        Defaults to a 512MiB cache
+    #
     def initialize(port=11211, cache=nil)
       @port = port
       @listening_thread = nil
@@ -50,10 +52,12 @@ module Memcached
        end
 
     end
-    attr_reader :port
+
+    # @return [Memcached::Cache] cache object attached to the server
     attr_reader :cache
 
     # Starts the server so it can listen for commands on the given port
+    # @return [Thread] thread controlling the connections of the server
     def start
       return @listening_thread if @listening_thread
 
@@ -92,10 +96,10 @@ module Memcached
 
         LOG.debug "Listening thread stopped"
       end
-
     end
 
     # Stops the server and releases the port
+    # @return [nil]
     def stop
       return unless @listening_thread
 
@@ -132,10 +136,10 @@ module Memcached
         thr.join
       end
       LOG.debug "Closed client connections"
-
+      nil
     end
 
-    # Returns true if the server is online
+    # @return [Boolean] whether the server is online or not
     def online?
       if @tcp_server.is_a? TCPServer
         # If it's not closed, it's online.
@@ -145,9 +149,13 @@ module Memcached
       end
     end
 
-    # Changes the port of the server. The server has to be closed first.
+
+    # @return [Numeric] port used by the server
+    # @raise [RuntimeError] if the server is online
+    attr_reader :port
+
     def port=(port)
-      raise "Cannot change the port when the server is open" if online?
+      raise RuntimeError, "Cannot change the port when the server is open" if online?
       @port=port
     end
 

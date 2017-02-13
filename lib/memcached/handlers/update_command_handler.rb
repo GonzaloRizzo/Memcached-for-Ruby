@@ -3,10 +3,12 @@ require 'memcached/utils'
 module Memcached
   module Handlers
 
+    # Handles set, add, replace, append, prepend and cas command
     class UpdateCommandHandler < BaseHandler
 
       @handles = [:set, :add, :replace, :append, :prepend, :cas]
 
+      # (see Memcached::Handlers::BaseHandler.handle)
       def handle(command, data)
 
         argv = data[:argv]

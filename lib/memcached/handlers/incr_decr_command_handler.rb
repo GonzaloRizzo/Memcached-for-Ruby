@@ -2,10 +2,12 @@ require 'memcached/handlers/base_handler'
 module Memcached
   module Handlers
 
+    # Handles the incr and decr commands
     class IncrDecrCommandHandler < BaseHandler
 
       @handles = [:incr, :decr]
 
+      # (see Memcached::Handlers::BaseHandler.handle)
       def handle(command, data)
 
         cache = data[:cache]
